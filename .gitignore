@@ -1,0 +1,23 @@
+# IDE Settings (PyCharm, VS Code)
+.idea/
+.vscode/
+*.iml
+
+# Python Virtual Environments
+.venv/
+venv/
+env/
+
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Data & Models
+# don't want to track the data, rather the code
+data/
+models/*.onnx
+models/*.pth
+*.zip
+*.tar.gz
+
