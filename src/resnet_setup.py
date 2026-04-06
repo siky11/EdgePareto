@@ -8,7 +8,7 @@ def get_resnet(num_classes=200, pretrained=True):
     # 1. load model
     if pretrained:
         model = models.resnet18(weights='DEFAULT')
-        print("pretrained wheigts loaded.")
+        print("pretrained weights loaded.")
     else:
         model = models.resnet18(weights=None)
         print("model initialized without prior knowledge.")

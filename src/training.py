@@ -3,35 +3,86 @@ import torch.nn as nn
 import torch.optim as optim
 from tiny_data_loader import get_tiny_imagenet_loaders
 from resnet_setup import get_resnet
+from utils import setup_reproducibility, get_software_inventory, save_experiment_log
 
-def train_one_epoch():
-    device = torch.device("cpu")
+#calculates validation metrics to monitor accuracy degradation
+def validate(model, val_loader, criterion, device):
+    model.eval()
+    val_loss = 0
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for images, labels in val_loader:
+            images, labels = images.to(device), labels.to(device)
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            val_loss += loss.item()
+            _, predicted = outputs.max(1)
+            total += labels.size(0)
+            correct += predicted.eq(labels).sum().item()
 
-    # 1. get data and model
+    accuracy = 100 * correct / total
+    return val_loss / len(val_loader), accuracy
+
+
+def train_baseline():
+    # 1. SUT definition & reproducibility
+    setup_reproducibility(seed=42)
+    inventory = get_software_inventory()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # 2. Setup Data & Model
+    # loads tiny according to specified scope
     train_loader, val_loader = get_tiny_imagenet_loaders(batch_size=32)
     model = get_resnet(num_classes=200).to(device)
 
-    # 2. loss function and optimizer
+    # standard cross entropy loss for multi-class classification
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-    model.train()
-    print("small training for 10 batches started...")
+    best_acc = 0.0
+    epochs = 20  # balanced count to prevent excessive training time
 
-    for batch_idx, batch in enumerate(train_loader):
-        if batch_idx >= 10:
-            break
+    print(f"[*] starting baseline training on {device}...")
 
-        images, labels = batch
-        images, labels = images.to(device), labels.to(device)
+    for epoch in range(epochs):
+        model.train()
+        # training loop
+        train_loss = 0
+        for batch_idx, (images, labels) in enumerate(train_loader):
+            images, labels = images.to(device), labels.to(device)
 
-        optimizer.zero_grad()
-        outputs = model(images)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
+            optimizer.zero_grad()
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            train_loss += loss.item()
 
-        print(f"batch {batch_idx+1}/10 - loss: {loss.item():.4f}")
+            # every 500 batches short update
+            if (batch_idx + 1) % 500 == 0:
+                print(f"Batch {batch_idx + 1}/{len(train_loader)} - Loss: {loss.item():.4f}")
+
+        # 3. validation & checkpointing
+        # measures top-1 accuracy
+        val_loss, val_acc = validate(model, val_loader, criterion, device)
+        print(f"Epoch {epoch + 1}/{epochs} - Val Acc: {val_acc:.2f}%")
+
+        #saves optimal FP32-baseline weights for later pruning stages
+        if val_acc > best_acc:
+            best_acc = val_acc
+            # Mit f-string den Wert in den Dateinamen packen
+            model_path = f"../models/best_baseline_acc{best_acc:.2f}.pth"
+            torch.save(model.state_dict(), model_path)
+            print(f"[!] new best model saved: {model_path}")
+
+    # 4. saves final protocol
+    results = {
+        "inventory": inventory,
+        "metrics": {"top1_accuracy": best_acc, "final_val_loss": val_loss},
+        "config": {"epochs": epochs, "batch_size": 32, "optimizer": "Adam", "lr": 0.001}
+    }
+    save_experiment_log("../models/", "baseline_fp32_report.json", results)
 
 if __name__ == "__main__":
-    train_one_epoch()
+    train_baseline()
