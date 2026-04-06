@@ -5,6 +5,7 @@ import os
 import platform
 import datasets
 import json
+import time
 from datetime import datetime
 
 def setup_reproducibility(seed=42):
@@ -58,3 +59,90 @@ def save_experiment_log(directory, filename, data):
         json.dump(data, f, indent=4)
 
     print(f"[*] Experiment log saved to: {path}")
+
+def get_kernel_characterization(model):
+    characterization = {}
+    total_flops = 0
+    total_params = 0
+
+    # start resolution for tiny imagenet
+    current_h, current_w = 64, 64
+
+    for name, module in model.named_modules():
+        # A) convolutional layers (kernels)
+        if isinstance(module, torch.nn.Conv2d):
+            k = module.kernel_size[0]
+            s = module.stride[0]
+            p = module.padding[0]
+            cin = module.in_channels
+            cout = module.out_channels
+
+            # saves feature map size for this layer (HW)
+            # important that the calculation finishes before the stride reduction for this layer
+            layer_hw = [current_h, current_w]
+
+            # calculates output size for next layer
+            current_h = (current_h + 2 * p - k) // s + 1
+            current_w = (current_w + 2 * p - k) // s + 1
+
+            # FLOPs & params
+            layer_flops = 2 * cin * cout * k * k * current_h * current_w
+            layer_params = sum(p.numel() for p in module.parameters())
+
+            total_flops += layer_flops
+            total_params += layer_params
+
+            characterization[name] = {
+                "type": "conv2d",
+                "HW": layer_hw,
+                "K": [k, k],
+                "S": [s, s],
+                "P": [p, p],
+                "C_in": cin,
+                "C_out": cout,
+                "flops": layer_flops,
+                "params": layer_params
+            }
+
+        # B) linear layers (classification head)
+        elif isinstance(module, torch.nn.Linear):
+            cin = module.in_features
+            cout = module.out_features
+            layer_flops = 2 * cin * cout
+            layer_params = sum(p.numel() for p in module.parameters())
+
+            total_flops += layer_flops
+            total_params += layer_params
+
+            characterization[name] = {
+                "type": "linear",
+                "C_in": cin,
+                "C_out": cout,
+                "flops": layer_flops,
+                "params": layer_params
+            }
+
+    return characterization, total_flops, total_params
+
+def measure_90th_latency(model, device, num_samples=500):
+
+    model.eval()
+    dummy_input = torch.randn(1, 3, 64, 64).to(device)
+    latencies = []
+
+    #Warm-up
+    for _ in range(20):
+        _ = model(dummy_input)
+
+    with torch.no_grad():
+        for _ in range(num_samples):
+            start_time = time.perf_counter()
+            _ = model(dummy_input)
+            if device == "cuda":
+                torch.cuda.synchronize()    #waits for GPU to finish
+            end_time = time.perf_counter()
+            latencies.append((end_time - start_time) * 1000)    #in milliseconds
+
+    latencies.sort()
+    p90 = latencies[int(len(latencies) * 0.9)]
+    return p90, latencies
