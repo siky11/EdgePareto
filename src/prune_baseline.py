@@ -1,27 +1,61 @@
 import torch
 import torch_pruning as tp
+import torch.nn as nn
 import os
 
-# Importe aus deinen bestehenden Dateien
+from tiny_data_loader import get_tiny_imagenet_loaders
+from report_generator import generate_report
 from resnet_setup import get_resnet
-from utils import setup_reproducibility, measure_90th_latency
+from utils import setup_reproducibility
+from utils import validate
 
-def apply_pruning(model_path, pruning_ratio=0.3):
+def evaluate_pruning_stage(model, v_loader, crit, target_device, pruning_level, stage_name):
+    """
+    Evaluates the model at a specific point in the pruning pipeline.
+    Captures accuracy and triggers the automated report generator.
+    """
+    print(f"[*] evaluating stage: {stage_name} (ratio: {pruning_level})...")
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    setup_reproducibility(seed=42)
+    # 1. check accuracy
+    _, acc = validate(model, v_loader, crit, target_device)
+    print(f"[!] {stage_name} accuracy: {acc:.2f}%")
+
+    # 2. trigger comprehensive reporting
+    metrics = {
+        "top1_accuracy": acc,
+        "stage": stage_name
+    }
+
+    config = {
+        "pruning_ratio": pruning_level,
+        "criterion": "L1-Norm",
+        "stage": stage_name
+    }
+
+    # generating the actual JSON artifact
+    generate_report(
+        model=model,
+        device=device,
+        experiment_type=f"Structured Pruning ({stage_name})",
+        metrics=metrics,
+        config=config,
+        filename_prefix=f"resnet18_p{int(pruning_level * 100)}_{stage_name}"
+    )
+
+
+def apply_pruning(model_path,target_device, pruning_ratio=0.3):
 
     # 1. model initialization
     model = get_resnet(num_classes=200, pretrained=False)
 
     # 2. loads trained weights
-    model.load_state_dict(torch.load(model_path, map_location=device))
-    model.to(device)
+    model.load_state_dict(torch.load(model_path, map_location=target_device))
+    model.to(target_device)
     model.eval()
     print(f"[*] baseline model loaded: {model_path}")
 
     # 3. dummy input for dependency analysis
-    example_inputs = torch.rand(1, 3, 64, 64).to(device)
+    example_inputs = torch.rand(1, 3, 64, 64).to(target_device)
 
     # 4. pruning logic gets established (magnitude L1.Norm)
     importance = tp.importance.MagnitudeImportance(p=1)
@@ -45,29 +79,25 @@ def apply_pruning(model_path, pruning_ratio=0.3):
     print("[!] finished pruning")
     return model
 
+
 if __name__ == "__main__":
-    #path zo model for now hard coded
     BASE_MODEL_PATH = "../models/best_baseline_acc45.78.pth"
+    PRUNING_LEVELS = [0.3, 0.5, 0.7]
 
-    if not os.path.exists(BASE_MODEL_PATH):
-        print(f"error: file {BASE_MODEL_PATH} not found!")
-    else:
-        # execute pruning
-        pruned_model = apply_pruning(BASE_MODEL_PATH, pruning_ratio=0.3)
+    # Global hardware initialization
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    setup_reproducibility(seed=42)
 
-        # verification
-        print("\n--- architecture check after pruning ---")
+    # 1. setup environment once
+    train_loader, val_loader = get_tiny_imagenet_loaders(batch_size=32)
+    criterion = nn.CrossEntropyLoss()
 
-        #check first convulutional layer should now be fewer than 64
-        print(f"conv1 output channels: {pruned_model.conv1.out_channels}")
+    for level in PRUNING_LEVELS:
+        print(f"\n{'=' * 40}\n[*] Starting Experiment: Pruning Level {level}\n{'=' * 40}")
 
-        # test inference
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        test_inputs = torch.rand(1, 3, 64, 64).to(device)
-        with torch.no_grad():
-            output = pruned_model(test_inputs)
-        print(f"inference test successful! output-shape: {output.shape}")
+        # 2. apply the structural change - now passing the global 'device'
+        current_model = apply_pruning(BASE_MODEL_PATH, device, pruning_ratio=level)
 
-        # latency check
-        p90, _ = measure_90th_latency(pruned_model, device)
-        print(f"new p90 latency (pruned, without fine tuning): {p90:.4f} ms")
+        # 3. archive the "raw" state
+        # passing the same 'device' to ensure consistent benchmarking
+        evaluate_pruning_stage(current_model, val_loader, criterion, device, level, "raw")
