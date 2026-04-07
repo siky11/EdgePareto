@@ -8,6 +8,11 @@ import json
 import time
 from datetime import datetime
 
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
 def setup_reproducibility(seed=42):
 
     random.seed(seed)
@@ -27,11 +32,17 @@ def get_software_inventory():
     #gets the name of currently used device
     device_name = torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU Only"
 
+    ram_gb = "N/A"
+    if psutil is not None:
+        # Die IDE weiß jetzt: Hier kann psutil NICHT None sein
+        ram_gb = round(psutil.virtual_memory().total / (1024 ** 3), 2)
+
     return{
         "timestamp": datetime.now().strftime("%Y-%m-%d %H-%M-%S"),
         "os": platform.platform(),
         "processor": platform.processor(),  # adds CPU info
         "gpu_model": device_name,  # adds GPU name
+        "ram_total_gb": ram_gb,
         "python": platform.python_version(),
         "pytorch": torch.__version__,
         "cuda_available": torch.cuda.is_available(),
@@ -138,7 +149,7 @@ def measure_90th_latency(model, device, num_samples=500):
         for _ in range(num_samples):
             start_time = time.perf_counter()
             _ = model(dummy_input)
-            if device == "cuda":
+            if device.type == "cuda":
                 torch.cuda.synchronize()    #waits for GPU to finish
             end_time = time.perf_counter()
             latencies.append((end_time - start_time) * 1000)    #in milliseconds
@@ -146,3 +157,20 @@ def measure_90th_latency(model, device, num_samples=500):
     latencies.sort()
     p90 = latencies[int(len(latencies) * 0.9)]
     return p90, latencies
+
+def get_model_size_mb(file_path):
+    try:
+        if os.path.exists(file_path):
+            size_bytes = os.path.getsize(file_path)
+            return round(size_bytes / (1024 * 1024), 2)
+    except OSError:
+        pass
+    return 0.0
+
+def get_process_memory():
+    # Holt die ID des aktuellen Python-Prozesses
+    if psutil is not None:
+        process = psutil.Process(os.getpid())
+        mem_mb = process.memory_info().rss / (1024 * 1024)
+        return round(mem_mb, 2)
+    return 0.0

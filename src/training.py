@@ -1,11 +1,14 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import time
+import os
 
-from src.utils import get_kernel_characterization, measure_90th_latency
 from tiny_data_loader import get_tiny_imagenet_loaders
 from resnet_setup import get_resnet
-from utils import setup_reproducibility, get_software_inventory, save_experiment_log
+from utils import (setup_reproducibility, get_software_inventory,
+                   save_experiment_log, get_kernel_characterization,
+                   measure_90th_latency, get_model_size_mb)
 
 #calculates validation metrics to monitor accuracy degradation
 def validate(model, val_loader, criterion, device):
@@ -28,6 +31,10 @@ def validate(model, val_loader, criterion, device):
 
 
 def train_baseline():
+
+    start_time_total = time.time()
+    os.makedirs("../models/", exist_ok=True)
+
     # 1. SUT definition & reproducibility
     setup_reproducibility(seed=42)
     inventory = get_software_inventory()
@@ -47,9 +54,9 @@ def train_baseline():
 
     print(f"[*] starting baseline training on {device}...")
 
+    #training loop
     for epoch in range(epochs):
         model.train()
-        # training loop
         train_loss = 0
         for batch_idx, (images, labels) in enumerate(train_loader):
             images, labels = images.to(device), labels.to(device)
@@ -77,6 +84,10 @@ def train_baseline():
             torch.save(model.state_dict(), model_path)
             print(f"[!] new best model saved: {model_path}")
 
+    #end of training now start of analysis
+    total_training_time_sec = time.time() - start_time_total
+    print(f"[*] training finished in {total_training_time_sec / 60:.2f} minutes")
+
     # 4. final baseline characterization
     print("[*] running final baseline characterization...")
 
@@ -88,15 +99,21 @@ def train_baseline():
     print(f"[*] baseline latency (90th Percentile): {p90_latency:.4f} ms")
     print(f"[*] theoretical complexity: {total_flops / 1e6:.2f} MFLOPs")
 
+    # Modellgröße messen
+    best_model_path = f"../models/best_baseline_acc{best_acc:.2f}.pth"
+    model_size_mb = get_model_size_mb(best_model_path)
+
     # 5. saves final protocol
     results = {
         "inventory": inventory,
         "architecture_summary": arch_summary,
         "metrics": {
             "top1_accuracy": best_acc,
-            "theoretical_GFLOPs": total_flops / 1e9,  # in Giga-FLOPs
-            "total_parameters_M": total_params / 1e6,  # in million 
+            "theoretical_GFLOPs": total_flops / 1e9,
+            "total_parameters_M": total_params / 1e6,
+            "physical_size_mb": model_size_mb,
             "latency_p90_ms": p90_latency,
+            "total_training_time_sec": round(total_training_time_sec, 2),
             "final_val_loss": val_loss
         },
         "config": {
