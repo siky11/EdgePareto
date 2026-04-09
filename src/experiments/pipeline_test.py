@@ -1,6 +1,6 @@
 import torch
-from tiny_data_loader import get_tiny_imagenet_loaders
-from resnet_setup import get_resnet
+from src.setup.tiny_data_loader import get_tiny_imagenet_loaders
+from src.setup.resnet_setup import get_resnet
 
 def pipeline_test():
 

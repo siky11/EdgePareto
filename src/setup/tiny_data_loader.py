@@ -2,10 +2,18 @@ import torch
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from datasets import load_dataset
+from pathlib import Path
+
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+DEFAULT_CACHE = ROOT_DIR / "data" / "hf_cache"
 
 #Loads tiny-imagenet from hugging face
 # creates PyTorch DataLoader, preprocesses and automated downloading
-def get_tiny_imagenet_loaders(batch_size=64, cache_dir="../data/hf_cache"):
+def get_tiny_imagenet_loaders(batch_size=64, cache_dir=None):
+
+    # if no path was given the it calculates the root-path
+    if cache_dir is None:
+        cache_dir = str(DEFAULT_CACHE)
 
     print(f"load dataset (cache: {cache_dir})...")
 
@@ -21,8 +29,8 @@ def get_tiny_imagenet_loaders(batch_size=64, cache_dir="../data/hf_cache"):
     )
 
     train_transform = transforms.Compose([
-        #convertion to RGB, because tiny has some grey-step pictures
-        transforms.Lambda(lambda x: x.convert("RGB")),  # Wichtig: Graustufen-Bilder zu RGB wandeln
+        #convertion to RGB, because tiny has some gray-step pictures
+        transforms.Lambda(lambda x: x.convert("RGB")),  
 
         #this is for overfitting - ensures that classes are still classifiable even if it is rotated
         transforms.RandomHorizontalFlip(),

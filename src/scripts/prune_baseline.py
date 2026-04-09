@@ -3,45 +3,11 @@ import torch_pruning as tp
 import torch.nn as nn
 import os
 
-from tiny_data_loader import get_tiny_imagenet_loaders
-from report_generator import generate_report
-from resnet_setup import get_resnet
-from utils import setup_reproducibility
-from utils import validate
-
-def evaluate_pruning_stage(model, v_loader, crit, target_device, pruning_level, stage_name):
-    """
-    Evaluates the model at a specific point in the pruning pipeline.
-    Captures accuracy and triggers the automated report generator.
-    """
-    print(f"[*] evaluating stage: {stage_name} (ratio: {pruning_level})...")
-
-    # 1. check accuracy
-    _, acc = validate(model, v_loader, crit, target_device)
-    print(f"[!] {stage_name} accuracy: {acc:.2f}%")
-
-    # 2. trigger comprehensive reporting
-    metrics = {
-        "top1_accuracy": acc,
-        "stage": stage_name
-    }
-
-    config = {
-        "pruning_ratio": pruning_level,
-        "criterion": "L1-Norm",
-        "stage": stage_name
-    }
-
-    # generating the actual JSON artifact
-    generate_report(
-        model=model,
-        device=device,
-        experiment_type=f"Structured Pruning ({stage_name})",
-        metrics=metrics,
-        config=config,
-        filename_prefix=f"resnet18_p{int(pruning_level * 100)}_{stage_name}"
-    )
-
+from src.setup.tiny_data_loader import get_tiny_imagenet_loaders
+from src.utils.report_generator import generate_report
+from src.setup.resnet_setup import get_resnet
+from src.utils.utils import setup_reproducibility
+from src.utils.evaluation import evaluate_pruning_stage
 
 def apply_pruning(model_path,target_device, pruning_ratio=0.3):
 
@@ -57,7 +23,7 @@ def apply_pruning(model_path,target_device, pruning_ratio=0.3):
     # 3. dummy input for dependency analysis
     example_inputs = torch.rand(1, 3, 64, 64).to(target_device)
 
-    # 4. pruning logic gets established (magnitude L1.Norm)
+    # 4. pruning methods gets established (magnitude L1.Norm)
     importance = tp.importance.MagnitudeImportance(p=1)
 
     #ignores classifier fc to ensure 200 class structure
@@ -81,7 +47,7 @@ def apply_pruning(model_path,target_device, pruning_ratio=0.3):
 
 
 if __name__ == "__main__":
-    BASE_MODEL_PATH = "../models/best_baseline_acc45.78.pth"
+    BASE_MODEL_PATH = "../../models/best_baseline_acc45.78.pth"
     PRUNING_LEVELS = [0.3, 0.5, 0.7]
 
     # Global hardware initialization

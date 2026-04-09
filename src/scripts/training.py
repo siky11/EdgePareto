@@ -4,17 +4,17 @@ import torch.optim as optim
 import time
 import os
 
-from tiny_data_loader import get_tiny_imagenet_loaders
-from resnet_setup import get_resnet
-from utils import (setup_reproducibility, get_software_inventory,
+from src.setup.tiny_data_loader import get_tiny_imagenet_loaders
+from src.setup.resnet_setup import get_resnet
+from src.utils.utils import (setup_reproducibility, get_software_inventory,
                    save_experiment_log, get_kernel_characterization,
                    measure_90th_latency, get_model_size_mb)
-from utils import validate
+from src.utils.utils import validate
 
 def train_baseline():
 
     start_time_total = time.time()
-    os.makedirs("../models/", exist_ok=True)
+    os.makedirs("../../models/", exist_ok=True)
 
     # 1. SUT definition & reproducibility
     setup_reproducibility(seed=42)
