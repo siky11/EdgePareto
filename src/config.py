@@ -34,3 +34,10 @@ LR_FINETUNE = 1e-4
 # Quantisierung — "qnnpack" für ARM Edge-Hardware
 QUANTIZATION_BACKEND = "fbgemm"
 CALIBRATION_BATCHES = 64
+
+# ONNX Export
+ONNX_DIR        = MODELS_DIR / "onnx"
+ONNX_BASELINE   = ONNX_DIR / "baseline"
+ONNX_STANDALONE = ONNX_DIR / "standalone"
+ONNX_HYBRID     = ONNX_DIR / "hybrid"
+ONNX_OPSET      = 18
