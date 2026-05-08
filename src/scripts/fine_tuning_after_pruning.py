@@ -2,22 +2,23 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch_pruning as tp
-import os
 import time
+import src.config as cfg
 
 from src.setup.tiny_data_loader import get_tiny_imagenet_loaders
-from src.utils.utils import validate, setup_reproducibility
 from src.setup.resnet_setup import get_resnet
+from src.utils.utils import validate, setup_reproducibility
 from src.utils.evaluation import evaluate_pruning_stage
-from pathlib import Path
 
+
+#Reconstruct architecture and load weights (step must be replayed so shapes match)
+# The structural surgery (pruner.step) must be replayed so layer shapes match the .pth file.
 def load_pruned_model(raw_weights_path, target_device, target_ratio):
 
     # 1. starts with standard architecture
-    model = get_resnet(num_classes=200).to(target_device)
+    model = get_resnet(num_classes=cfg.NUM_CLASSES).to(target_device)
 
-    # 2. applys structural surgery to match the saved state
-    # This is required so the layer shapes match the .pth file
+    # 2. replays structural surgery to match the saved state
     example_inputs = torch.rand(1, 3, 64, 64).to(target_device)
     importance = tp.importance.MagnitudeImportance(p=1)
     ignored_layers = [model.fc]
@@ -26,26 +27,30 @@ def load_pruned_model(raw_weights_path, target_device, target_ratio):
         model, example_inputs, importance=importance,
         pruning_ratio=target_ratio, ignored_layers=ignored_layers
     )
-    pruner.step()  # The model now has the reduced dimensions
+    pruner.step()  # model now has the reduced dimensions
 
-    # 3. Load the specific weights from your previous pruning run
-    if not os.path.exists(raw_weights_path):
+    # 3. load the specific weights from the previous pruning run
+    if not raw_weights_path.exists():
         raise FileNotFoundError(f"Raw weights not found: {raw_weights_path}")
 
     model.load_state_dict(torch.load(raw_weights_path, map_location=target_device))
-    print(f"[*] Successfully loaded raw pruned weights: {raw_weights_path}")
+    print(f"[*] successfully loaded raw pruned weights: {raw_weights_path.name}")
     return model
 
 
-def run_recovery_training(model, target_device, t_loader, v_loader, level, epochs=5):
+# Fine-tunes the pruned model to recover accuracy.
+# Runs for a fixed number of epochs and saves a report at the end.
+def run_recovery_training(model, target_device, t_loader, v_loader, level,
+                          epochs=cfg.FINETUNE_EPOCHS, lr=cfg.LR_FINETUNE):
     print(f"[*] starting iterative retraining for level {level}...")
 
     start_time = time.time()
+
     # Cross Entropy Loss
     criterion = nn.CrossEntropyLoss()
 
-    #Adam Optimizer with LR=1e-4
-    optimizer = optim.Adam(model.parameters(), lr=0.0001)
+    # Adam optimizer with LR from config
+    optimizer = optim.Adam(model.parameters(), lr=lr)
 
     best_recovery_acc = 0.0
     final_loss = 0.0
@@ -54,8 +59,8 @@ def run_recovery_training(model, target_device, t_loader, v_loader, level, epoch
         model.train()
         running_loss = 0.0
         for images, labels in t_loader:
-            images = images.to(device)
-            labels = labels.to(device)
+            images = images.to(target_device)
+            labels = labels.to(target_device)
 
             optimizer.zero_grad()
             outputs = model(images)
@@ -64,7 +69,7 @@ def run_recovery_training(model, target_device, t_loader, v_loader, level, epoch
             optimizer.step()
             running_loss += loss.item()
 
-        #Validation
+        # validation
         final_loss = running_loss / len(t_loader)
         _, current_acc = validate(model, v_loader, criterion, target_device)
         print(f"epoch {epoch+1}/{epochs}, current recovery accuracy {current_acc:.2f}%")
@@ -81,36 +86,37 @@ def run_recovery_training(model, target_device, t_loader, v_loader, level, epoch
         target_device=target_device,
         pruning_level=level,
         stage_name="finetuned",
-        total_time = total_time,
+        total_time=total_time,
         final_loss=final_loss
     )
 
     return model
 
+
 if __name__ == "__main__":
-
-    #level to load
-    LEVEL = 0.3
-    EPOCHS = 5
-
-    base_dir = Path(__file__).resolve().parent.parent.parent
-    RAW_PATH = base_dir / "models" / f"resnet18_p{int(LEVEL * 100)}_raw_weights.pth"
-
-    RAW_PATH_STR = str(RAW_PATH)
-
-    setup_reproducibility(seed=42)
+    setup_reproducibility(cfg.SEED)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # 1. setup data
-    train_loader, val_loader = get_tiny_imagenet_loaders(batch_size=32)
+    # 1. setup data once
+    train_loader, val_loader = get_tiny_imagenet_loaders(batch_size=cfg.BATCH_SIZE)
 
-    # 2. reconstruct and load
-    try:
-        pruned_model = load_pruned_model(RAW_PATH, device, LEVEL)
+    for level in cfg.PRUNING_RATIOS:
+        print(f"\n{'=' * 40}\n[*] Fine-tuning p{int(level * 100)}\n{'=' * 40}")
 
-        # 3. start fine-tuning
-        run_recovery_training(pruned_model, device, train_loader, val_loader, LEVEL, epochs=EPOCHS)
-        print(f"\n[!] Recovery for p{int(LEVEL * 100)} finished. Report generated.")
+        # find matching raw weights for this level
+        raw_candidates = sorted(cfg.MODELS_DIR.glob(f"resnet18_p{int(level * 100)}_raw_acc*_weights.pth"))
+        if not raw_candidates:
+            raise FileNotFoundError(f"No raw weights found for p{int(level * 100)} in {cfg.MODELS_DIR}")
+        raw_path = raw_candidates[0]
+        print(f"[*] using raw weights: {raw_path.name}")
 
-    except Exception as e:
-        print(f"[!] Error: {e}")
+        try:
+            # 2. reconstruct and load
+            pruned_model = load_pruned_model(raw_path, device, level)
+
+            # 3. start fine-tuning
+            run_recovery_training(pruned_model, device, train_loader, val_loader, level)
+            print(f"[!] recovery for p{int(level * 100)} finished. report generated.")
+
+        except Exception as e:
+            print(f"[!] error for p{int(level * 100)}: {e}")
