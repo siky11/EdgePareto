@@ -4,7 +4,7 @@ import torch.optim as optim
 import time
 from datetime import datetime
 
-from src.config import SEED, NUM_CLASSES, BATCH_SIZE, TRAINING_EPOCHS, LR_BASELINE, MODELS_DIR
+from src.config import SEED, NUM_CLASSES, BATCH_SIZE, TRAINING_EPOCHS, LR_BASELINE, WEIGHTS_BASELINE, REPORTS_BASELINE
 from src.setup.tiny_data_loader import get_tiny_imagenet_loaders
 from src.setup.resnet_setup import get_resnet
 from src.utils.utils import (setup_reproducibility, get_software_inventory,
@@ -14,7 +14,8 @@ from src.utils.utils import (setup_reproducibility, get_software_inventory,
 def train_baseline():
 
     start_time_total = time.time()
-    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    WEIGHTS_BASELINE.mkdir(parents=True, exist_ok=True)
+    REPORTS_BASELINE.mkdir(parents=True, exist_ok=True)
 
     # 1. reproducibility & system info
     setup_reproducibility(seed=SEED)
@@ -56,7 +57,7 @@ def train_baseline():
         # saves best FP32 weights for later pruning stages
         if val_acc > best_acc:
             best_acc = val_acc
-            model_path = MODELS_DIR / f"best_baseline_acc{best_acc:.2f}.pth"
+            model_path = WEIGHTS_BASELINE / f"best_baseline_acc{best_acc:.2f}.pth"
             torch.save(model.state_dict(), model_path)
             print(f"[!] new best model saved: {model_path}")
 
@@ -65,7 +66,7 @@ def train_baseline():
 
     # 4. reload best weights before characterization
     # (model currently holds last epoch, not best)
-    best_model_path = MODELS_DIR / f"best_baseline_acc{best_acc:.2f}.pth"
+    best_model_path = WEIGHTS_BASELINE / f"best_baseline_acc{best_acc:.2f}.pth"
     model.load_state_dict(torch.load(best_model_path, map_location=device))
     model.eval()
 
@@ -105,7 +106,7 @@ def train_baseline():
             "seed": SEED
         }
     }
-    save_experiment_log(str(MODELS_DIR), "baseline_fp32_report.json", results)
+    save_experiment_log(str(REPORTS_BASELINE), "baseline_fp32_report.json", results)
 
 if __name__ == "__main__":
     train_baseline()

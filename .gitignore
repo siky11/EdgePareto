@@ -16,8 +16,8 @@ __pycache__/
 # Data & Models
 # don't want to track the data, rather the code
 data/
+models/weights/
 models/*.onnx
-models/*.pth
 *.zip
 *.tar.gz
 

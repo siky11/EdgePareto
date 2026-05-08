@@ -5,6 +5,18 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 MODELS_DIR = ROOT_DIR / "models"
 DATA_CACHE_DIR = ROOT_DIR / "data" / "hf_cache"
 
+# weights and reports split by workflow
+WEIGHTS_DIR = MODELS_DIR / "weights"
+REPORTS_DIR = MODELS_DIR / "reports"
+
+WEIGHTS_BASELINE   = WEIGHTS_DIR / "baseline"
+WEIGHTS_STANDALONE = WEIGHTS_DIR / "standalone"
+WEIGHTS_HYBRID     = WEIGHTS_DIR / "hybrid"
+
+REPORTS_BASELINE   = REPORTS_DIR / "baseline"
+REPORTS_STANDALONE = REPORTS_DIR / "standalone"
+REPORTS_HYBRID     = REPORTS_DIR / "hybrid"
+
 # Allgemeine Experiment-Einstellungen
 SEED = 42
 NUM_CLASSES = 200

@@ -8,12 +8,12 @@ import time
 import src.config as cfg
 
 from src.setup.tiny_data_loader import get_tiny_imagenet_loaders
-from src.utils.utils import setup_reproducibility
+from src.utils.utils import setup_reproducibility, get_kernel_characterization
 from src.utils.evaluation import evaluate_pruning_stage
 
 
-# Runs static INT8 PTQ on a given model (baseline or pruned+finetuned).
-# Quantization always runs on CPU — required by fbgemm/qnnpack backends.
+# Runs static INT8 PTQ on a given model (baseline or pruned+finetuned)
+# Quantization always runs on CPU — required by fbgemm/qnnpack backends
 def quantization(weights_path, pruning_level=0.0, stage_name="quantized_final", workflow="standalone"):
     device = torch.device("cpu")
 
@@ -47,16 +47,19 @@ def quantization(weights_path, pruning_level=0.0, stage_name="quantized_final", 
     model.eval()
     print(f"[*] weights loaded: {Path(weights_path).name}")
 
-    # 5. operator fusion
+    # 5. capture FP32 arch stats before fusion — needed for quantized report
+    fp32_arch, fp32_flops, fp32_params = get_kernel_characterization(model)
+
+    # 6. operator fusion
     model.fuse_model()
 
-    # 6. quantization config — switch to 'qnnpack' in cfg for ARM edge deployment
+    # 7. quantization config — switch to 'qnnpack' in cfg for ARM edge deployment
     model.qconfig = quant.get_default_qconfig(cfg.QUANTIZATION_BACKEND)
 
-    # 7. prepare (activates observers)
+    # 8. prepare (activates observers)
     model_prepared = quant.prepare(model)
 
-    # 8. calibration
+    # 9. calibration
     print("[*] running calibration...")
     with torch.no_grad():
         for i, (images, _) in enumerate(train_loader):
@@ -64,13 +67,13 @@ def quantization(weights_path, pruning_level=0.0, stage_name="quantized_final", 
                 break
             model_prepared(images)
 
-    # 9. convert to INT8
+    # 10. convert to INT8
     print("[*] converting to static INT8...")
     start_time = time.perf_counter()
     model_int8 = quant.convert(model_prepared)
     process_duration = time.perf_counter() - start_time
 
-    # 10. final evaluation
+    # 11. final evaluation
     evaluate_pruning_stage(
         model=model_int8,
         v_loader=val_loader,
@@ -80,7 +83,8 @@ def quantization(weights_path, pruning_level=0.0, stage_name="quantized_final", 
         stage_name=stage_name,
         total_time=process_duration,
         final_loss=0.0,
-        workflow=workflow
+        workflow=workflow,
+        fp32_stats={"fp32_arch": fp32_arch, "fp32_flops": fp32_flops, "fp32_params": fp32_params}
     )
 
 
@@ -88,7 +92,7 @@ if __name__ == "__main__":
     setup_reproducibility(cfg.SEED)
 
     # find the latest baseline model
-    baseline_candidates = sorted(cfg.MODELS_DIR.glob("best_baseline_acc*.pth"))
+    baseline_candidates = sorted(cfg.WEIGHTS_BASELINE.glob("best_baseline_acc*.pth"))
     if not baseline_candidates:
         raise FileNotFoundError(f"No baseline model found in {cfg.MODELS_DIR}")
     baseline_path = baseline_candidates[-1]

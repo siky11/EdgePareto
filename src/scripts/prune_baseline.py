@@ -9,8 +9,8 @@ from src.utils.utils import setup_reproducibility
 from src.utils.evaluation import evaluate_pruning_stage
 
 
-# Applies structured L1-norm pruning to the baseline model.
-# Returns the pruned model — still needs fine-tuning to recover accuracy.
+# Applies structured L1-norm pruning to the baseline model
+# Returns the pruned model — still needs fine-tuning to recover accuracy
 def apply_pruning(model_path, target_device, pruning_ratio=0.3):
 
     # 1. model initialization
@@ -52,8 +52,8 @@ if __name__ == "__main__":
     setup_reproducibility(cfg.SEED)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # find the latest baseline model in models/
-    baseline_candidates = sorted(cfg.MODELS_DIR.glob("best_baseline_acc*.pth"))
+    # find the latest baseline model
+    baseline_candidates = sorted(cfg.WEIGHTS_BASELINE.glob("best_baseline_acc*.pth"))
     if not baseline_candidates:
         raise FileNotFoundError(f"No baseline model found in {cfg.MODELS_DIR}")
     BASE_MODEL_PATH = baseline_candidates[-1]

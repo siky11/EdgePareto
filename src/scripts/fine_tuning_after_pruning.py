@@ -12,7 +12,7 @@ from src.utils.evaluation import evaluate_pruning_stage
 
 
 #Reconstruct architecture and load weights (step must be replayed so shapes match)
-# The structural surgery (pruner.step) must be replayed so layer shapes match the .pth file.
+# The structural surgery (pruner.step) must be replayed so layer shapes match the .pth file
 def load_pruned_model(raw_weights_path, target_device, target_ratio):
 
     # 1. starts with standard architecture
@@ -38,8 +38,8 @@ def load_pruned_model(raw_weights_path, target_device, target_ratio):
     return model
 
 
-# Fine-tunes the pruned model to recover accuracy.
-# Runs for a fixed number of epochs and saves a report at the end.
+# Fine-tunes the pruned model to recover accuracy
+# Runs for a fixed number of epochs and saves a report at the end
 def run_recovery_training(model, target_device, t_loader, v_loader, level,
                           epochs=cfg.FINETUNE_EPOCHS, lr=cfg.LR_FINETUNE,
                           stage_name="finetuned", workflow="standalone"):
@@ -106,9 +106,9 @@ if __name__ == "__main__":
         print(f"\n{'=' * 40}\n[*] Fine-tuning p{int(level * 100)}\n{'=' * 40}")
 
         # find matching raw weights for this level
-        raw_candidates = sorted(cfg.MODELS_DIR.glob(f"resnet18_p{int(level * 100)}_raw_acc*_weights.pth"))
+        raw_candidates = sorted(cfg.WEIGHTS_STANDALONE.glob(f"resnet18_p{int(level * 100)}_raw_acc*_weights.pth"))
         if not raw_candidates:
-            raise FileNotFoundError(f"No raw weights found for p{int(level * 100)} in {cfg.MODELS_DIR}")
+            raise FileNotFoundError(f"No raw weights found for p{int(level * 100)} in {cfg.WEIGHTS_STANDALONE}")
         raw_path = raw_candidates[0]
         print(f"[*] using raw weights: {raw_path.name}")
 
