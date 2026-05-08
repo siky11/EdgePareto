@@ -3,7 +3,7 @@ from src.utils.utils import validate
 from src.utils.report_generator import generate_report
 
 #universal evaluation function (Baseline, Raw, Finetuned) ensures consistent reporting
-def evaluate_pruning_stage(model, v_loader, crit, target_device, pruning_level, stage_name, total_time=0.0, final_loss=0.0):
+def evaluate_pruning_stage(model, v_loader, crit, target_device, pruning_level, stage_name, total_time=0.0, final_loss=0.0, workflow="standalone"):
 
     print(f"\n[*] --- EVALUATION STAGE: {stage_name.upper()} (Ratio: {pruning_level}) ---")
 
@@ -21,6 +21,7 @@ def evaluate_pruning_stage(model, v_loader, crit, target_device, pruning_level, 
 
     config = {
         "pruning_ratio": pruning_level,
+        "workflow": workflow,
         "criterion": "L1-Norm",
         "stage": stage_name
     }

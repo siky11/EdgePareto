@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import time
+from datetime import datetime
 
 from src.config import SEED, NUM_CLASSES, BATCH_SIZE, TRAINING_EPOCHS, LR_BASELINE, MODELS_DIR
 from src.setup.tiny_data_loader import get_tiny_imagenet_loaders
@@ -77,6 +78,11 @@ def train_baseline():
 
     # 6. save final report
     results = {
+        "metadata": {
+            "experiment_type": "Baseline Training (FP32)",
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "associated_weights": f"best_baseline_acc{best_acc:.2f}.pth"
+        },
         "inventory": inventory,
         "architecture_summary": arch_summary,
         "metrics": {
@@ -86,9 +92,12 @@ def train_baseline():
             "physical_size_mb": model_size_mb,
             "latency_p90_ms": p90_latency,
             "total_training_time_sec": round(total_time, 2),
-            "final_val_loss": val_loss
+            "final_val_loss": val_loss,
+            "stage": "baseline"
         },
         "config": {
+            "pruning_ratio": 0.0,
+            "workflow": "standalone",
             "epochs": TRAINING_EPOCHS,
             "batch_size": BATCH_SIZE,
             "optimizer": "Adam",

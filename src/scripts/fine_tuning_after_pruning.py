@@ -41,7 +41,8 @@ def load_pruned_model(raw_weights_path, target_device, target_ratio):
 # Fine-tunes the pruned model to recover accuracy.
 # Runs for a fixed number of epochs and saves a report at the end.
 def run_recovery_training(model, target_device, t_loader, v_loader, level,
-                          epochs=cfg.FINETUNE_EPOCHS, lr=cfg.LR_FINETUNE):
+                          epochs=cfg.FINETUNE_EPOCHS, lr=cfg.LR_FINETUNE,
+                          stage_name="finetuned", workflow="standalone"):
     print(f"[*] starting iterative retraining for level {level}...")
 
     start_time = time.time()
@@ -85,9 +86,10 @@ def run_recovery_training(model, target_device, t_loader, v_loader, level,
         crit=criterion,
         target_device=target_device,
         pruning_level=level,
-        stage_name="finetuned",
+        stage_name=stage_name,
         total_time=total_time,
-        final_loss=final_loss
+        final_loss=final_loss,
+        workflow=workflow
     )
 
     return model

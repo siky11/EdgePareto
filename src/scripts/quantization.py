@@ -14,7 +14,7 @@ from src.utils.evaluation import evaluate_pruning_stage
 
 # Runs static INT8 PTQ on a given model (baseline or pruned+finetuned).
 # Quantization always runs on CPU — required by fbgemm/qnnpack backends.
-def quantization(weights_path, pruning_level=0.0, stage_name="quantized_final"):
+def quantization(weights_path, pruning_level=0.0, stage_name="quantized_final", workflow="standalone"):
     device = torch.device("cpu")
 
     # 1. load data
@@ -79,7 +79,8 @@ def quantization(weights_path, pruning_level=0.0, stage_name="quantized_final"):
         pruning_level=pruning_level,
         stage_name=stage_name,
         total_time=process_duration,
-        final_loss=0.0
+        final_loss=0.0,
+        workflow=workflow
     )
 
 
