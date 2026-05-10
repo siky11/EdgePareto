@@ -1,0 +1,19 @@
+# Requirements for Raspberry Pi 4 (ARM64, CPU-only inference)
+# install everything with: pip install -r requirements_rp4.txt
+
+# onnxruntime is the main thing needed here - this is what actualy runs the .onnx models on the pi
+# important: install the regular cpu version, NOT onnxruntime-gpu (thats only for the jetson)
+onnxruntime
+
+# numpy is needed for the dummy input arrays in the benchmark script (np.random.randn)
+numpy
+
+# psutil handles the hardware monitoring during inference - CPU%, RAM and temperature
+# temperature reading actualy works on raspberry pi via sensors_temperatures() unlike on windows
+psutil
+
+# torch is NOT used for inference here - onnxruntime handles everything
+# but the benchmark script imports from src/utils/utils.py which has "import torch" at the top
+# so it needs to be installed even though no pytorch operations are actually run
+# just a transitive dependency - annoying but cant avoid it without refactoring utils.py
+torch

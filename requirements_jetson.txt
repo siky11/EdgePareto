@@ -1,0 +1,18 @@
+# Requirements for NVIDIA Jetson Nano (JetPack, CUDA inference)
+# install with: pip install -r requirements_jetson.txt
+#
+# IMPORTANT: PyTorch and CUDA are already included in JetPack -> do NOT pip install torch here
+# it comes pre-installed via the nvidia jetpack environment, installing it again via pip will break things
+#
+# onnxruntime-gpu for Jetson requires the NVIDIA-provided wheel, NOT the standard PyPI version
+# the normal "pip install onnxruntime-gpu" wont work on jetson - it needs the arm64 jetpack build
+# download the correct wheel from: https://elinux.org/Jetson_Zoo#ONNX_Runtime
+# then install manualy with: pip install onnxruntime_gpu-*.whl
+
+# numpy is needed for the dummy input arrays in the benchmark script (np.random.randn)
+numpy
+
+# psutil handles hardware monitoring during inference - CPU%, RAM usage
+# note: temperature on Jetson is readable via /sys/devices/virtual/thermal/
+# power consumption might need tegrastats instead of sysfs on jetson
+psutil

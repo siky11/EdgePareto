@@ -29,6 +29,16 @@ LATENCY_RUNS = 500
 OFFLINE_RUNS = 1024
 
 
+# reads the board model from the linux device tree - works on raspberry pi and jetson nano
+# on windows this path doesnt exist so we fall back to the hostname
+def detect_target_device():
+    try:
+        model = Path("/proc/device-tree/model").read_text().strip().rstrip("\x00")
+        return model
+    except (FileNotFoundError, OSError):
+        return platform.node() or "Unknown"
+
+
 # tries to extract pruning_ratio and workflow type directly from the filename
 def parse_model_info(model_path):
     name = Path(model_path).stem
@@ -307,6 +317,7 @@ def main():
             "model": model_path.name,
             "mode": args.mode,
             "device": args.device,
+            "target_device": detect_target_device(),
         },
         # system under test shows exactly which hardware ran the benchmark
         "inventory": get_edge_inventory(session),
