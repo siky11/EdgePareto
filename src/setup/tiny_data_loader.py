@@ -30,7 +30,7 @@ def get_tiny_imagenet_loaders(batch_size=64, cache_dir=None):
 
     train_transform = transforms.Compose([
         #convertion to RGB, because tiny has some gray-step pictures
-        transforms.Lambda(lambda x: x.convert("RGB")),  
+          transforms.Lambda(lambda x: x.convert("RGB")),
 
         #this is for overfitting - ensures that classes are still classifiable even if it is rotated
         transforms.RandomHorizontalFlip(),
@@ -38,6 +38,10 @@ def get_tiny_imagenet_loaders(batch_size=64, cache_dir=None):
 
         #converts size to 64x64 pixels - native tiny-image size
         transforms.Resize(64),
+
+        # padding=8 adds 8px border, then crops back to 64x64
+        # forces the model to learn position-invariant features
+        transforms.RandomCrop(64, padding=8),
 
         #convertion to tensor
         transforms.ToTensor(),

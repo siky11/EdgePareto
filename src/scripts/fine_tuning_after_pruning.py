@@ -1,3 +1,4 @@
+import copy
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -47,13 +48,15 @@ def run_recovery_training(model, target_device, t_loader, v_loader, level,
 
     start_time = time.time()
 
-    # Cross Entropy Loss
-    criterion = nn.CrossEntropyLoss()
+    # same settings as baseline training for consistency
+    criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
+    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-4)
 
-    # Adam optimizer with LR from config
-    optimizer = optim.Adam(model.parameters(), lr=lr)
+    # cosine annealing reduces lr gradually — same reasoning as in training.py
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
 
     best_recovery_acc = 0.0
+    best_weights = None  # keeps a copy of the best checkpoint in memory
     final_loss = 0.0
 
     for epoch in range(epochs):
@@ -73,10 +76,17 @@ def run_recovery_training(model, target_device, t_loader, v_loader, level,
         # validation
         final_loss = running_loss / len(t_loader)
         _, current_acc = validate(model, v_loader, criterion, target_device)
+        scheduler.step()
         print(f"epoch {epoch+1}/{epochs}, current recovery accuracy {current_acc:.2f}%")
 
+        # save best weights in memory so we dont evaluate with the last epoch
         if current_acc > best_recovery_acc:
             best_recovery_acc = current_acc
+            best_weights = copy.deepcopy(model.state_dict())
+
+    # reload best checkpoint before generating the report
+    if best_weights is not None:
+        model.load_state_dict(best_weights)
 
     total_time = time.time() - start_time
 

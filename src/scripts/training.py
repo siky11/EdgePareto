@@ -1,3 +1,4 @@
+import copy
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -26,11 +27,19 @@ def train_baseline():
     train_loader, val_loader = get_tiny_imagenet_loaders(batch_size=BATCH_SIZE)
     model = get_resnet(num_classes=NUM_CLASSES).to(device)
 
-    # standard cross entropy loss for multi-class classification
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=LR_BASELINE)
+    # label smoothing prevents the model from becoming overconfident on training data
+    # instead of targeting 100% confidence, it targets 90% -> better generalization
+    criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
+
+    # weight_decay adds L2 regularization -> penalizes large weights -> reduces overfitting
+    optimizer = optim.Adam(model.parameters(), lr=LR_BASELINE, weight_decay=1e-4)
+
+    # cosine annealing gradually reduces lr from LR_BASELINE down to eta_min over all epochs
+    # this helps the model fine-tune in later epochs instead of oscillating around a plateau
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=TRAINING_EPOCHS, eta_min=1e-6)
 
     best_acc = 0.0
+    best_weights = None  # keeps best checkpoint in memory, saved once at the end
     print(f"[*] starting baseline training on {device}...")
 
     # training loop
@@ -52,22 +61,23 @@ def train_baseline():
 
         # 3. validation & checkpointing
         val_loss, val_acc = validate(model, val_loader, criterion, device)
-        print(f"Epoch {epoch + 1}/{TRAINING_EPOCHS} - Val Acc: {val_acc:.2f}%")
+        scheduler.step()
+        current_lr = scheduler.get_last_lr()[0]
+        print(f"Epoch {epoch + 1}/{TRAINING_EPOCHS} - Val Acc: {val_acc:.2f}% - LR: {current_lr:.2e}")
 
-        # saves best FP32 weights for later pruning stages
         if val_acc > best_acc:
             best_acc = val_acc
-            model_path = WEIGHTS_BASELINE / f"best_baseline_acc{best_acc:.2f}.pth"
-            torch.save(model.state_dict(), model_path)
-            print(f"[!] new best model saved: {model_path}")
+            best_weights = copy.deepcopy(model.state_dict())
+            print(f"[!] new best accuracy: {best_acc:.2f}%")
 
     total_time = time.time() - start_time_total
     print(f"[*] training finished in {total_time / 60:.2f} minutes")
 
-    # 4. reload best weights before characterization
-    # (model currently holds last epoch, not best)
+    # 4. save best weights once and reload for characterization
     best_model_path = WEIGHTS_BASELINE / f"best_baseline_acc{best_acc:.2f}.pth"
-    model.load_state_dict(torch.load(best_model_path, map_location=device))
+    torch.save(best_weights, best_model_path)
+    print(f"[!] best model saved: {best_model_path.name}")
+    model.load_state_dict(best_weights)
     model.eval()
 
     # 5. final characterization
@@ -103,6 +113,9 @@ def train_baseline():
             "batch_size": BATCH_SIZE,
             "optimizer": "Adam",
             "lr": LR_BASELINE,
+            "weight_decay": 1e-4,
+            "scheduler": "CosineAnnealingLR",
+            "label_smoothing": 0.1,
             "seed": SEED
         }
     }
