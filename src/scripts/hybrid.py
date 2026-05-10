@@ -1,13 +1,22 @@
+import re
 import torch
 import torch.nn as nn
 import src.config as cfg
 
+from pathlib import Path
 from src.setup.tiny_data_loader import get_tiny_imagenet_loaders
 from src.utils.utils import setup_reproducibility
 from src.utils.evaluation import evaluate_pruning_stage
 from src.scripts.prune_baseline import apply_pruning
 from src.scripts.fine_tuning_after_pruning import run_recovery_training
 from src.scripts.quantization import quantization
+
+
+def sort_by_acc(candidates):
+    def parse_acc(p):
+        match = re.search(r"acc([\d.]+)", Path(p).name)
+        return float(match.group(1)) if match else 0.0
+    return sorted(candidates, key=parse_acc)
 
 
 if __name__ == "__main__":
@@ -19,7 +28,7 @@ if __name__ == "__main__":
     criterion = nn.CrossEntropyLoss()
 
     # find baseline model
-    baseline_candidates = sorted(cfg.WEIGHTS_BASELINE.glob("best_baseline_acc*.pth"))
+    baseline_candidates = sort_by_acc(cfg.WEIGHTS_BASELINE.glob("best_baseline_acc*.pth"))
     if not baseline_candidates:
         raise FileNotFoundError(f"No baseline model found in {cfg.WEIGHTS_BASELINE}")
     baseline_path = baseline_candidates[-1]
@@ -38,7 +47,7 @@ if __name__ == "__main__":
                                   stage_name="hybrid_finetuned", workflow="hybrid")
 
             # 4. find the saved finetuned weights
-            finetuned_candidates = sorted(cfg.WEIGHTS_HYBRID.glob(f"resnet18_p{int(level * 100)}_hybrid_finetuned_acc*_weights.pth"))
+            finetuned_candidates = sort_by_acc(cfg.WEIGHTS_HYBRID.glob(f"resnet18_p{int(level * 100)}_hybrid_finetuned_acc*_weights.pth"))
             if not finetuned_candidates:
                 print(f"[!] no finetuned weights found for p{int(level * 100)}, skipping quantization...")
                 continue

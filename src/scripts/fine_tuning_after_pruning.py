@@ -1,3 +1,4 @@
+import re
 import copy
 import torch
 import torch.nn as nn
@@ -6,10 +7,20 @@ import torch_pruning as tp
 import time
 import src.config as cfg
 
+from pathlib import Path
 from src.setup.tiny_data_loader import get_tiny_imagenet_loaders
 from src.setup.resnet_setup import get_resnet
 from src.utils.utils import validate, setup_reproducibility
 from src.utils.evaluation import evaluate_pruning_stage
+
+
+# sorts weight files numerically by accuracy — alphabetic sorting breaks when
+# accuracies have different digit counts (e.g. "acc9.67" sorts after "acc14.44")
+def sort_by_acc(candidates):
+    def parse_acc(p):
+        match = re.search(r"acc([\d.]+)", Path(p).name)
+        return float(match.group(1)) if match else 0.0
+    return sorted(candidates, key=parse_acc)
 
 
 #Reconstruct architecture and load weights (step must be replayed so shapes match)
@@ -116,7 +127,7 @@ if __name__ == "__main__":
         print(f"\n{'=' * 40}\n[*] Fine-tuning p{int(level * 100)}\n{'=' * 40}")
 
         # find matching raw weights for this level
-        raw_candidates = sorted(cfg.WEIGHTS_STANDALONE.glob(f"resnet18_p{int(level * 100)}_raw_acc*_weights.pth"))
+        raw_candidates = sort_by_acc(cfg.WEIGHTS_STANDALONE.glob(f"resnet18_p{int(level * 100)}_raw_acc*_weights.pth"))
         if not raw_candidates:
             raise FileNotFoundError(f"No raw weights found for p{int(level * 100)} in {cfg.WEIGHTS_STANDALONE}")
         raw_path = raw_candidates[0]

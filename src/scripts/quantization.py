@@ -1,3 +1,4 @@
+import re
 import torch
 import torch.nn as nn
 import torch.ao.quantization as quant
@@ -6,6 +7,13 @@ from torchvision.models.quantization import resnet18 as quant_resnet18
 from pathlib import Path
 import time
 import src.config as cfg
+
+
+def sort_by_acc(candidates):
+    def parse_acc(p):
+        match = re.search(r"acc([\d.]+)", Path(p).name)
+        return float(match.group(1)) if match else 0.0
+    return sorted(candidates, key=parse_acc)
 
 from src.setup.tiny_data_loader import get_tiny_imagenet_loaders
 from src.utils.utils import setup_reproducibility, get_kernel_characterization
@@ -92,7 +100,7 @@ if __name__ == "__main__":
     setup_reproducibility(cfg.SEED)
 
     # find the latest baseline model
-    baseline_candidates = sorted(cfg.WEIGHTS_BASELINE.glob("best_baseline_acc*.pth"))
+    baseline_candidates = sort_by_acc(cfg.WEIGHTS_BASELINE.glob("best_baseline_acc*.pth"))
     if not baseline_candidates:
         raise FileNotFoundError(f"No baseline model found in {cfg.MODELS_DIR}")
     baseline_path = baseline_candidates[-1]

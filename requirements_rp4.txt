@@ -16,4 +16,10 @@ psutil
 # but the benchmark script imports from src/utils/utils.py which has "import torch" at the top
 # so it needs to be installed even though no pytorch operations are actually run
 # just a transitive dependency - annoying but cant avoid it without refactoring utils.py
+# IMPORTANT: install cpu-only version to avoid downloading nvidia/cuda packages (saves ~1GB)
+# pip install torch --index-url https://download.pytorch.org/whl/cpu
 torch
+
+# onnx is needed when running --mode int8 on the benchmark script
+# onnxruntime.quantization imports onnx internally for dynamic INT8 quantization
+onnx

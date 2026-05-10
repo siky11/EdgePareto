@@ -16,6 +16,13 @@ def extract_acc(weights_path):
     return match.group(1) if match else "unknown"
 
 
+# sorts weight files by numeric accuracy value instead of alphabetically
+# important! alphabetic sorting breaks when accuracies have different digit counts
+# e.g. "acc9.67" sorts AFTER "acc14.44" alphabetically because "9" > "1" as a character
+def sort_by_acc(candidates):
+    return sorted(candidates, key=lambda p: float(extract_acc(p)) if extract_acc(p) != "unknown" else 0.0)
+
+
 # Exports a model to ONNX and verifies it with a dummy forward pass
 # dynamo=False uses the older TorchScript-based exporter which is more stable for resnet
 def export_to_onnx(model, save_path):
@@ -45,9 +52,9 @@ def export_to_onnx(model, save_path):
 
 
 # Loads the FP32 baseline model from WEIGHTS_BASELINE
-# takes the latest checkpoint (sorted alphabetically, last = highest acc usually)
+# takes the checkpoint with the highest accuracy (sorted numerically)
 def load_baseline(device):
-    candidates = sorted(cfg.WEIGHTS_BASELINE.glob("best_baseline_acc*.pth"))
+    candidates = sort_by_acc(cfg.WEIGHTS_BASELINE.glob("best_baseline_acc*.pth"))
     if not candidates:
         raise FileNotFoundError(f"No baseline weights found in {cfg.WEIGHTS_BASELINE}")
 
@@ -96,7 +103,7 @@ if __name__ == "__main__":
     # 1. baseline (used for FP32 reference and isolated INT8 evaluation on hardware)
     print("\n[*] exporting baseline...")
     try:
-        candidates = sorted(cfg.WEIGHTS_BASELINE.glob("best_baseline_acc*.pth"))
+        candidates = sort_by_acc(cfg.WEIGHTS_BASELINE.glob("best_baseline_acc*.pth"))
         acc = extract_acc(candidates[-1])
         model = load_baseline(device)
         export_to_onnx(model, cfg.ONNX_BASELINE / f"resnet18_baseline_acc{acc}_fp32.onnx")
@@ -108,7 +115,7 @@ if __name__ == "__main__":
     for level in cfg.PRUNING_RATIOS:
         tag = f"p{int(level * 100)}"
         print(f"\n[*] exporting standalone {tag}...")
-        candidates = sorted(cfg.WEIGHTS_STANDALONE.glob(f"resnet18_{tag}_finetuned_acc*_weights.pth"))
+        candidates = sort_by_acc(cfg.WEIGHTS_STANDALONE.glob(f"resnet18_{tag}_finetuned_acc*_weights.pth"))
         if not candidates:
             print(f"[!] no standalone weights found for {tag} — skipping")
             continue
@@ -124,7 +131,7 @@ if __name__ == "__main__":
     for level in cfg.PRUNING_RATIOS:
         tag = f"p{int(level * 100)}"
         print(f"\n[*] exporting hybrid {tag}...")
-        candidates = sorted(cfg.WEIGHTS_HYBRID.glob(f"resnet18_{tag}_hybrid_finetuned_acc*_weights.pth"))
+        candidates = sort_by_acc(cfg.WEIGHTS_HYBRID.glob(f"resnet18_{tag}_hybrid_finetuned_acc*_weights.pth"))
         if not candidates:
             print(f"[!] no hybrid weights found for {tag} — skipping")
             continue

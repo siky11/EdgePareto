@@ -1,12 +1,23 @@
+import re
 import torch
 import torch_pruning as tp
 import torch.nn as nn
 import src.config as cfg
 
+from pathlib import Path
 from src.setup.tiny_data_loader import get_tiny_imagenet_loaders
 from src.setup.resnet_setup import get_resnet
 from src.utils.utils import setup_reproducibility
 from src.utils.evaluation import evaluate_pruning_stage
+
+
+# sorts weight files numerically by accuracy — alphabetic sorting breaks when
+# accuracies have different digit counts (e.g. "acc9.67" sorts after "acc14.44")
+def sort_by_acc(candidates):
+    def parse_acc(p):
+        match = re.search(r"acc([\d.]+)", Path(p).name)
+        return float(match.group(1)) if match else 0.0
+    return sorted(candidates, key=parse_acc)
 
 
 # Applies structured L1-norm pruning to the baseline model
@@ -53,7 +64,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # find the latest baseline model
-    baseline_candidates = sorted(cfg.WEIGHTS_BASELINE.glob("best_baseline_acc*.pth"))
+    baseline_candidates = sort_by_acc(cfg.WEIGHTS_BASELINE.glob("best_baseline_acc*.pth"))
     if not baseline_candidates:
         raise FileNotFoundError(f"No baseline model found in {cfg.MODELS_DIR}")
     BASE_MODEL_PATH = baseline_candidates[-1]
