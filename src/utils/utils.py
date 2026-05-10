@@ -3,10 +3,17 @@ import numpy as np
 import random
 import os
 import platform
-import datasets
 import json
 import time
 from datetime import datetime
+
+# datasets is only used to log its version number in get_software_inventory()
+# the actual dataset loading happens in tiny_data_loader.py, not here
+# optional import so utils.py can also be loaded on edge devices without HuggingFace installed
+try:
+    import datasets
+except ImportError:
+    datasets = None
 
 try:
     import psutil
@@ -47,7 +54,7 @@ def get_software_inventory():
         "pytorch": torch.__version__,
         "cuda_available": torch.cuda.is_available(),
         "cuda_version": torch.version.cuda if torch.cuda.is_available() else "N/A",
-        "hf_datasets": datasets.__version__
+        "hf_datasets": datasets.__version__ if datasets else "N/A"
     }
 
 def save_experiment_log(directory, filename, data):
