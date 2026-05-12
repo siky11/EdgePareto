@@ -11,7 +11,7 @@ import src.config as cfg
 
 def sort_by_acc(candidates):
     def parse_acc(p):
-        match = re.search(r"acc([\d.]+)", Path(p).name)
+        match = re.search(r"acc(\d+\.\d+)", Path(p).name)
         return float(match.group(1)) if match else 0.0
     return sorted(candidates, key=parse_acc)
 

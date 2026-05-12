@@ -15,7 +15,7 @@ from src.utils.evaluation import evaluate_pruning_stage
 # accuracies have different digit counts (e.g. "acc9.67" sorts after "acc14.44")
 def sort_by_acc(candidates):
     def parse_acc(p):
-        match = re.search(r"acc([\d.]+)", Path(p).name)
+        match = re.search(r"acc(\d+\.\d+)", Path(p).name)
         return float(match.group(1)) if match else 0.0
     return sorted(candidates, key=parse_acc)
 
