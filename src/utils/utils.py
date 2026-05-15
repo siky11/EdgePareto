@@ -1,4 +1,7 @@
-import torch
+try:
+    import torch
+except ImportError:
+    torch = None
 import numpy as np
 import random
 import os
