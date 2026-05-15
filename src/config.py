@@ -40,4 +40,4 @@ ONNX_DIR        = MODELS_DIR / "onnx"
 ONNX_BASELINE   = ONNX_DIR / "baseline"
 ONNX_STANDALONE = ONNX_DIR / "standalone"
 ONNX_HYBRID     = ONNX_DIR / "hybrid"
-ONNX_OPSET      = 18
+ONNX_OPSET      = 12
