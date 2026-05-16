@@ -195,8 +195,10 @@ def get_session(model_path, mode, device):
         return ort.InferenceSession(str(model_path), providers=providers)
 
     elif device == "cuda":
-        # standard GPU inference in FP32, CUDA provider is preferred, falls back to CPU
-        return ort.InferenceSession(str(model_path), providers=["CUDAExecutionProvider", "CPUExecutionProvider"])
+        # both FP32 and INT8 use TensorrtExecutionProvider for a consistent comparison
+        # this isolates the quantization effect from the TensorRT graph optimization effect
+        # on Jetson Nano (Maxwell) native INT8 is not supported, so both modes compute in FP32
+        return ort.InferenceSession(str(model_path), providers=["TensorrtExecutionProvider", "CUDAExecutionProvider", "CPUExecutionProvider"])
 
     else:
         # default: cpu inference in fp32
