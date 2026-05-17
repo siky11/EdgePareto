@@ -92,6 +92,7 @@ class HardwareMonitor:
         self.ram_samples = []
         self.process_ram_samples = []
         self.temp_samples = []
+        self.gpu_samples = []
 
         # daemon=True thread gets killed automatically when the main program exits
         self._thread = threading.Thread(target=self._run, daemon=True)
@@ -137,6 +138,15 @@ class HardwareMonitor:
                 except (AttributeError, NotImplementedError):
                     pass
 
+                # GPU utilization via sysfs, works on Jetson Nano only
+                # returns 0-1000, divide by 10 to get percentage
+                # on raspberry pi and windows this path doesnt exist -> silently skipped
+                try:
+                    gpu_load = int(Path("/sys/devices/gpu.0/load").read_text().strip())
+                    self.gpu_samples.append(round(gpu_load / 10, 1))
+                except (FileNotFoundError, ValueError):
+                    pass
+
             # wait for the next interval (or until stop() is called)
             self._stop.wait(self.interval)
 
@@ -145,6 +155,7 @@ class HardwareMonitor:
     def summary(self):
         return {
             "cpu_util_avg_pct": round(float(np.mean(self.cpu_samples)), 1) if self.cpu_samples else None,
+            "gpu_util_avg_pct": round(float(np.mean(self.gpu_samples)), 1) if self.gpu_samples else None,
             "ram_used_avg_mb": round(float(np.mean(self.ram_samples)), 1) if self.ram_samples else None,
             "process_ram_avg_mb": round(float(np.mean(self.process_ram_samples)), 1) if self.process_ram_samples else None,
             # max temp is important to detect thermal throttling during the benchmark
