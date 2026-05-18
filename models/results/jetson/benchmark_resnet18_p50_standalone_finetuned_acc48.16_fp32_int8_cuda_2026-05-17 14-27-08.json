@@ -1,0 +1,48 @@
+{
+    "metadata": {
+        "timestamp": "2026-05-17 14:27:08",
+        "model": "resnet18_p50_standalone_finetuned_acc48.16_fp32.onnx",
+        "mode": "int8",
+        "device": "cuda",
+        "target_device": "NVIDIA Jetson Nano Developer Kit"
+    },
+    "inventory": {
+        "os": "Linux-4.9.253-tegra-aarch64-with-Ubuntu-18.04-bionic",
+        "cpu": "aarch64",
+        "cpu_cores_physical": 4,
+        "ram_total_mb": 3964,
+        "python_version": "3.6.9",
+        "onnxruntime_version": "1.10.0",
+        "providers_active": [
+            "TensorrtExecutionProvider",
+            "CUDAExecutionProvider",
+            "CPUExecutionProvider"
+        ]
+    },
+    "storage": {
+        "model_size_mb": 10.87
+    },
+    "hardware": {
+        "cpu_util_avg_pct": 13.8,
+        "gpu_util_avg_pct": 83.3,
+        "ram_used_avg_mb": 2044.6,
+        "process_ram_avg_mb": 1619.8,
+        "temp_max_c": 44.8,
+        "temp_avg_c": 44.6,
+        "power_avg_w": null
+    },
+    "single_stream": {
+        "p90_latency_ms": 2.6752,
+        "num_samples": 500,
+        "warmup_runs": 20
+    },
+    "offline": {
+        "throughput_samples_per_sec": 401.21,
+        "num_samples": 1024
+    },
+    "config": {
+        "pruning_ratio": 0.5,
+        "workflow": "standalone",
+        "mode": "int8"
+    }
+}

@@ -1,0 +1,504 @@
+{
+    "metadata": {
+        "experiment_type": "Structured Pruning (hybrid_quantized)",
+        "timestamp": "2026-05-12 17:45:17",
+        "associated_weights": "resnet18_p70_hybrid_quantized_acc38.33_weights.pth"
+    },
+    "inventory": {
+        "timestamp": "2026-05-12 17-45-16",
+        "os": "Windows-10-10.0.26200-SP0",
+        "processor": "AMD64 Family 25 Model 97 Stepping 2, AuthenticAMD",
+        "gpu_model": "CPU Only",
+        "ram_total_gb": 15.65,
+        "python": "3.10.11",
+        "pytorch": "2.11.0+cpu",
+        "cuda_available": false,
+        "cuda_version": "N/A",
+        "hf_datasets": "4.8.4"
+    },
+    "architecture_summary": {
+        "conv1": {
+            "type": "conv2d",
+            "HW": [
+                64,
+                64
+            ],
+            "K": [
+                7,
+                7
+            ],
+            "S": [
+                2,
+                2
+            ],
+            "P": [
+                3,
+                3
+            ],
+            "C_in": 3,
+            "C_out": 19,
+            "flops": 5720064,
+            "params": 2793
+        },
+        "layer1.0.conv1": {
+            "type": "conv2d",
+            "HW": [
+                32,
+                32
+            ],
+            "K": [
+                3,
+                3
+            ],
+            "S": [
+                1,
+                1
+            ],
+            "P": [
+                1,
+                1
+            ],
+            "C_in": 19,
+            "C_out": 19,
+            "flops": 6653952,
+            "params": 3249
+        },
+        "layer1.0.conv2": {
+            "type": "conv2d",
+            "HW": [
+                32,
+                32
+            ],
+            "K": [
+                3,
+                3
+            ],
+            "S": [
+                1,
+                1
+            ],
+            "P": [
+                1,
+                1
+            ],
+            "C_in": 19,
+            "C_out": 19,
+            "flops": 6653952,
+            "params": 3249
+        },
+        "layer1.1.conv1": {
+            "type": "conv2d",
+            "HW": [
+                32,
+                32
+            ],
+            "K": [
+                3,
+                3
+            ],
+            "S": [
+                1,
+                1
+            ],
+            "P": [
+                1,
+                1
+            ],
+            "C_in": 19,
+            "C_out": 19,
+            "flops": 6653952,
+            "params": 3249
+        },
+        "layer1.1.conv2": {
+            "type": "conv2d",
+            "HW": [
+                32,
+                32
+            ],
+            "K": [
+                3,
+                3
+            ],
+            "S": [
+                1,
+                1
+            ],
+            "P": [
+                1,
+                1
+            ],
+            "C_in": 19,
+            "C_out": 19,
+            "flops": 6653952,
+            "params": 3249
+        },
+        "layer2.0.conv1": {
+            "type": "conv2d",
+            "HW": [
+                32,
+                32
+            ],
+            "K": [
+                3,
+                3
+            ],
+            "S": [
+                2,
+                2
+            ],
+            "P": [
+                1,
+                1
+            ],
+            "C_in": 19,
+            "C_out": 38,
+            "flops": 3326976,
+            "params": 6498
+        },
+        "layer2.0.conv2": {
+            "type": "conv2d",
+            "HW": [
+                16,
+                16
+            ],
+            "K": [
+                3,
+                3
+            ],
+            "S": [
+                1,
+                1
+            ],
+            "P": [
+                1,
+                1
+            ],
+            "C_in": 38,
+            "C_out": 38,
+            "flops": 6653952,
+            "params": 12996
+        },
+        "layer2.0.downsample.0": {
+            "type": "conv2d",
+            "HW": [
+                16,
+                16
+            ],
+            "K": [
+                1,
+                1
+            ],
+            "S": [
+                2,
+                2
+            ],
+            "P": [
+                0,
+                0
+            ],
+            "C_in": 19,
+            "C_out": 38,
+            "flops": 92416,
+            "params": 722
+        },
+        "layer2.1.conv1": {
+            "type": "conv2d",
+            "HW": [
+                8,
+                8
+            ],
+            "K": [
+                3,
+                3
+            ],
+            "S": [
+                1,
+                1
+            ],
+            "P": [
+                1,
+                1
+            ],
+            "C_in": 38,
+            "C_out": 38,
+            "flops": 1663488,
+            "params": 12996
+        },
+        "layer2.1.conv2": {
+            "type": "conv2d",
+            "HW": [
+                8,
+                8
+            ],
+            "K": [
+                3,
+                3
+            ],
+            "S": [
+                1,
+                1
+            ],
+            "P": [
+                1,
+                1
+            ],
+            "C_in": 38,
+            "C_out": 38,
+            "flops": 1663488,
+            "params": 12996
+        },
+        "layer3.0.conv1": {
+            "type": "conv2d",
+            "HW": [
+                8,
+                8
+            ],
+            "K": [
+                3,
+                3
+            ],
+            "S": [
+                2,
+                2
+            ],
+            "P": [
+                1,
+                1
+            ],
+            "C_in": 38,
+            "C_out": 76,
+            "flops": 831744,
+            "params": 25992
+        },
+        "layer3.0.conv2": {
+            "type": "conv2d",
+            "HW": [
+                4,
+                4
+            ],
+            "K": [
+                3,
+                3
+            ],
+            "S": [
+                1,
+                1
+            ],
+            "P": [
+                1,
+                1
+            ],
+            "C_in": 76,
+            "C_out": 76,
+            "flops": 1663488,
+            "params": 51984
+        },
+        "layer3.0.downsample.0": {
+            "type": "conv2d",
+            "HW": [
+                4,
+                4
+            ],
+            "K": [
+                1,
+                1
+            ],
+            "S": [
+                2,
+                2
+            ],
+            "P": [
+                0,
+                0
+            ],
+            "C_in": 38,
+            "C_out": 76,
+            "flops": 23104,
+            "params": 2888
+        },
+        "layer3.1.conv1": {
+            "type": "conv2d",
+            "HW": [
+                2,
+                2
+            ],
+            "K": [
+                3,
+                3
+            ],
+            "S": [
+                1,
+                1
+            ],
+            "P": [
+                1,
+                1
+            ],
+            "C_in": 76,
+            "C_out": 76,
+            "flops": 415872,
+            "params": 51984
+        },
+        "layer3.1.conv2": {
+            "type": "conv2d",
+            "HW": [
+                2,
+                2
+            ],
+            "K": [
+                3,
+                3
+            ],
+            "S": [
+                1,
+                1
+            ],
+            "P": [
+                1,
+                1
+            ],
+            "C_in": 76,
+            "C_out": 76,
+            "flops": 415872,
+            "params": 51984
+        },
+        "layer4.0.conv1": {
+            "type": "conv2d",
+            "HW": [
+                2,
+                2
+            ],
+            "K": [
+                3,
+                3
+            ],
+            "S": [
+                2,
+                2
+            ],
+            "P": [
+                1,
+                1
+            ],
+            "C_in": 76,
+            "C_out": 153,
+            "flops": 209304,
+            "params": 104652
+        },
+        "layer4.0.conv2": {
+            "type": "conv2d",
+            "HW": [
+                1,
+                1
+            ],
+            "K": [
+                3,
+                3
+            ],
+            "S": [
+                1,
+                1
+            ],
+            "P": [
+                1,
+                1
+            ],
+            "C_in": 153,
+            "C_out": 153,
+            "flops": 421362,
+            "params": 210681
+        },
+        "layer4.0.downsample.0": {
+            "type": "conv2d",
+            "HW": [
+                1,
+                1
+            ],
+            "K": [
+                1,
+                1
+            ],
+            "S": [
+                2,
+                2
+            ],
+            "P": [
+                0,
+                0
+            ],
+            "C_in": 76,
+            "C_out": 153,
+            "flops": 23256,
+            "params": 11628
+        },
+        "layer4.1.conv1": {
+            "type": "conv2d",
+            "HW": [
+                1,
+                1
+            ],
+            "K": [
+                3,
+                3
+            ],
+            "S": [
+                1,
+                1
+            ],
+            "P": [
+                1,
+                1
+            ],
+            "C_in": 153,
+            "C_out": 153,
+            "flops": 421362,
+            "params": 210681
+        },
+        "layer4.1.conv2": {
+            "type": "conv2d",
+            "HW": [
+                1,
+                1
+            ],
+            "K": [
+                3,
+                3
+            ],
+            "S": [
+                1,
+                1
+            ],
+            "P": [
+                1,
+                1
+            ],
+            "C_in": 153,
+            "C_out": 153,
+            "flops": 421362,
+            "params": 210681
+        },
+        "fc": {
+            "type": "linear",
+            "C_in": 153,
+            "C_out": 200,
+            "flops": 61200,
+            "params": 30800
+        }
+    },
+    "metrics": {
+        "top1_accuracy": 38.33,
+        "theoretical_GFLOPs": 0.050644118,
+        "total_parameters_M": 1.025952,
+        "physical_size_mb": 1.06,
+        "latency_p90_ms": 2.3548000026494265,
+        "total_training_time_sec": 0.22,
+        "final_val_loss": 0.0,
+        "stage": "hybrid_quantized"
+    },
+    "config": {
+        "pruning_ratio": 0.7,
+        "workflow": "hybrid",
+        "criterion": "L1-Norm",
+        "stage": "hybrid_quantized"
+    }
+}

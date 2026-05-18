@@ -1,0 +1,46 @@
+{
+    "metadata": {
+        "timestamp": "2026-05-17 15:06:19",
+        "model": "resnet18_p50_hybrid_finetuned_acc48.37_fp32.onnx",
+        "mode": "fp32",
+        "device": "cpu",
+        "target_device": "Raspberry Pi 4 Model B Rev 1.5"
+    },
+    "inventory": {
+        "os": "Linux-6.12.75+rpt-rpi-v8-aarch64-with-glibc2.41",
+        "cpu": "aarch64",
+        "cpu_cores_physical": 4,
+        "ram_total_mb": 3797,
+        "python_version": "3.13.5",
+        "onnxruntime_version": "1.26.0",
+        "providers_active": [
+            "CPUExecutionProvider"
+        ]
+    },
+    "storage": {
+        "model_size_mb": 10.87
+    },
+    "hardware": {
+        "cpu_util_avg_pct": 85.7,
+        "gpu_util_avg_pct": null,
+        "ram_used_avg_mb": 365.9,
+        "process_ram_avg_mb": 259.1,
+        "temp_max_c": 64.8,
+        "temp_avg_c": 63.4,
+        "power_avg_w": null
+    },
+    "single_stream": {
+        "p90_latency_ms": 6.9335,
+        "num_samples": 500,
+        "warmup_runs": 20
+    },
+    "offline": {
+        "throughput_samples_per_sec": 145.38,
+        "num_samples": 1024
+    },
+    "config": {
+        "pruning_ratio": 0.5,
+        "workflow": "hybrid",
+        "mode": "fp32"
+    }
+}
