@@ -17,8 +17,8 @@ def extract_acc(weights_path):
 
 
 # sorts weight files by numeric accuracy value instead of alphabetically
-# important! alphabetic sorting breaks when accuracies have different digit counts
-# e.g. "acc9.67" sorts AFTER "acc14.44" alphabetically because "9" > "1" as a character
+# !! alphabetic sorting breaks when accuracies have different digit counts
+# "acc9.67" sorts AFTER "acc14.44" alphabetically because "9" > "1" as a character
 def sort_by_acc(candidates):
     return sorted(candidates, key=lambda p: float(extract_acc(p)) if extract_acc(p) != "unknown" else 0.0)
 
@@ -44,7 +44,7 @@ def export_to_onnx(model, save_path):
     print(f"[!] exported: {save_path.name}")
 
     # verifies the exported model with onnxruntime
-    # just becuase export didnt crash doesnt mean the model actually works
+    # just because export didnt crash doesnt mean the model actually works
     # runs a real forward pass through the onnx model to make sure outputs look correct
     session = ort.InferenceSession(str(save_path))
     outputs = session.run(None, {"input": dummy_input.numpy()})
@@ -66,7 +66,7 @@ def load_baseline(device):
 
 # Replays the MetaPruner surgery and loads the pruned weights
 # The architectural surgery replayed so layer shapes match the saved state dict
-# this is necesary because pruning actually changes the model architecture
+# this is necessary because pruning actually changes the model architecture
 # cant just load pruned weights into a fresh resnet18, layer sizes won't match
 # recreates the exact same pruning first, then loads the weights
 def load_pruned(weights_path, pruning_level, device):
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"[!] baseline export failed: {e}")
 
-    # 2. standalone pruned models (FP32 — isolates pruning effect on hardware)
+    # 2. standalone pruned models
     # standalone = only pruning was applied, no quantization in training pipeline
     for level in cfg.PRUNING_RATIOS:
         tag = f"p{int(level * 100)}"
@@ -126,7 +126,7 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"[!] standalone {tag} export failed: {e}")
 
-    # 3. hybrid pruned models (FP32 — converted to INT8 by hardware runtime)
+    # 3. hybrid pruned models FP32 — converted to INT8 by hardware runtime
     # hybrid = pruning + quantization combined, INT8 conversion happens on the device
     for level in cfg.PRUNING_RATIOS:
         tag = f"p{int(level * 100)}"

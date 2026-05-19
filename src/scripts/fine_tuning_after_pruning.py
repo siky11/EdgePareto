@@ -63,7 +63,7 @@ def run_recovery_training(model, target_device, t_loader, v_loader, level,
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-4)
 
-    # cosine annealing reduces lr gradually — same reasoning as in training.py
+    # cosine annealing reduces lr gradually (same reasoning as in training.py)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
 
     best_recovery_acc = 0.0
@@ -90,7 +90,7 @@ def run_recovery_training(model, target_device, t_loader, v_loader, level,
         scheduler.step()
         print(f"epoch {epoch+1}/{epochs}, current recovery accuracy {current_acc:.2f}%")
 
-        # save best weights in memory so we dont evaluate with the last epoch
+        # save best weights in memory so doesnt evaluate with the last epoch
         if current_acc > best_recovery_acc:
             best_recovery_acc = current_acc
             best_weights = copy.deepcopy(model.state_dict())

@@ -12,7 +12,7 @@ from src.utils.evaluation import evaluate_pruning_stage
 
 
 # sorts weight files numerically by accuracy — alphabetic sorting breaks when
-# accuracies have different digit counts (e.g. "acc9.67" sorts after "acc14.44")
+# accuracies have different digit counts ("acc9.67" sorts after "acc14.44")
 def sort_by_acc(candidates):
     def parse_acc(p):
         match = re.search(r"acc(\d+\.\d+)", Path(p).name)
@@ -21,7 +21,7 @@ def sort_by_acc(candidates):
 
 
 # Applies structured L1-norm pruning to the baseline model
-# Returns the pruned model — still needs fine-tuning to recover accuracy
+# Returns the pruned model ,still needs fine-tuning to recover accuracy
 def apply_pruning(model_path, target_device, pruning_ratio=0.3):
 
     # 1. model initialization

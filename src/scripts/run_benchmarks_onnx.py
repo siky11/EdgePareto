@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-# convenience script that runs all onnx benchmarks automatically
-# instead of typing every benchmark command manually, this scans models/onnx/
-# and runs benchmark_onnx.py for each model in both fp32 and int8 mode
-
 # Raspberry Pi:  python -m src.scripts.run_benchmarks_onnx --device cpu
 # Jetson Nano:   python -m src.scripts.run_benchmarks_onnx --device cuda
 

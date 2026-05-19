@@ -6,10 +6,6 @@ from src.utils.utils import (get_software_inventory, get_kernel_characterization
 
 
 def generate_report(model, device, experiment_type, metrics, config, filename_prefix, weights_dir, reports_dir):
-    """
-    Main reporting methods to aggregate all metrics into a structured JSON format.
-    Ensures that both the protocol and the physical weights are preserved.
-    """
 
     print(f"[*] generating comprehensive report for {experiment_type}...")
 

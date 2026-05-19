@@ -21,7 +21,7 @@ from src.utils.evaluation import evaluate_pruning_stage
 
 
 # Runs static INT8 PTQ on a given model (baseline or pruned+finetuned)
-# Quantization always runs on CPU — required by fbgemm/qnnpack backends
+# Quantization always runs on CPU required by fbgemm/qnnpack backends
 def quantization(weights_path, pruning_level=0.0, stage_name="quantized_final", workflow="standalone"):
     device = torch.device("cpu")
 
@@ -29,7 +29,7 @@ def quantization(weights_path, pruning_level=0.0, stage_name="quantized_final", 
     train_loader, val_loader = get_tiny_imagenet_loaders(batch_size=cfg.BATCH_SIZE)
     criterion = nn.CrossEntropyLoss()
 
-    # 2. quantizable resnet skeleton (has fuse_model() and quant stubs built in)
+    # 2. quantizable resnet skeleton has fuse_model() and quant stubs built in
     print("[*] initializing quantizable ResNet-18 skeleton...")
     model = quant_resnet18(num_classes=cfg.NUM_CLASSES)
 
@@ -55,13 +55,13 @@ def quantization(weights_path, pruning_level=0.0, stage_name="quantized_final", 
     model.eval()
     print(f"[*] weights loaded: {Path(weights_path).name}")
 
-    # 5. capture FP32 arch stats before fusion — needed for quantized report
+    # 5. capture FP32 arch stats before fusion, needed for quantized report
     fp32_arch, fp32_flops, fp32_params = get_kernel_characterization(model)
 
     # 6. operator fusion
     model.fuse_model()
 
-    # 7. quantization config — switch to 'qnnpack' in cfg for ARM edge deployment
+    # 7. quantization config, switch to 'qnnpack' in cfg for ARM edge deployment
     model.qconfig = quant.get_default_qconfig(cfg.QUANTIZATION_BACKEND)
 
     # 8. prepare (activates observers)

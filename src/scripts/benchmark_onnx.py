@@ -17,9 +17,9 @@ except ImportError:
 from src.utils.utils import get_model_size_mb, save_experiment_log, get_process_memory
 
 
-# --- benchmark config ---
-# warmup runs are important! first few inferences are always slower becuase of
-# caching effects, JIT compilation etc. -> throwa them away and doesnt measure them
+
+# warmup runs are important! first few inferences are always slower because of
+# caching effects, JIT compilation etc. throws them away and doesnt measure them
 WARMUP_RUNS  = 20
 
 # samples that are actually measured for latency (Single-Stream scenario)
@@ -29,8 +29,8 @@ LATENCY_RUNS = 500
 OFFLINE_RUNS = 1024
 
 
-# reads the board model from the linux device tree - works on raspberry pi and jetson nano
-# on windows this path doesnt exist so we fall back to the hostname
+# reads the board model from the linux device tree, works on raspberry pi and jetson nano
+# on windows this path doesnt exist so fall back to the hostname
 def detect_target_device():
     try:
         model = Path("/proc/device-tree/model").read_text().strip().rstrip("\x00")
@@ -57,8 +57,8 @@ def parse_model_info(model_path):
 
 
 # builds the hardware/software inventory for the benchmark report
-# important: this is intentionaly different from get_software_inventory() in utils.py
-# becuase edge devices dont have PyTorch, CUDA or HuggingFace installed
+# !! this is intentionaly different from get_software_inventory() in utils.py
+# because edge devices dont have PyTorch, CUDA or HuggingFace installed
 def get_edge_inventory(session):
     mem = psutil.virtual_memory() if psutil else None
     return {
@@ -68,14 +68,14 @@ def get_edge_inventory(session):
         "cpu_cores_physical": psutil.cpu_count(logical=False) if psutil else None,
         "ram_total_mb": round(mem.total / (1024 ** 2)) if mem else None,
         "python_version": platform.python_version(),
-        # onnx runtime version is teh key dependency here, not pytorch
+        # onnx runtime version is the key dependency here, not pytorch
         "onnxruntime_version": ort.__version__,
         # shows which execution backend is actually being used (CPU, CUDA, TensorRT...)
         "providers_active": session.get_providers(),
     }
 
 
-# runs in a background thread and continuosly samples hardware metrics
+# runs in a background thread and continuously samples hardware metrics
 # while the inference benchmark is running in the main thread
 # -> this way gets real measurements during actual inference, not before or after
 class HardwareMonitor:
@@ -87,7 +87,7 @@ class HardwareMonitor:
         # threading.Event is used to signal the background thread to stop
         self._stop = threading.Event()
 
-        # lists to collect samples over time, averages them later in summary()
+        # lists to collect samples over time, averages them later in summary
         self.cpu_samples = []
         self.ram_samples = []
         self.process_ram_samples = []
@@ -98,7 +98,7 @@ class HardwareMonitor:
         self._thread = threading.Thread(target=self._run, daemon=True)
 
         # first call to cpu_percent always returns 0.0 because it needs a
-        # reference point -> we call it once here to "prime" it and throw away the result
+        # reference point -> call it once here to "prime" it and throw away the result
         if psutil:
             psutil.cpu_percent(interval=None)
 
@@ -119,15 +119,15 @@ class HardwareMonitor:
                 # system-wide CPU usage in percent
                 self.cpu_samples.append(psutil.cpu_percent(interval=None))
 
-                # total system RAM currently in use (in MB)
+                # total system RAM currently in use
                 self.ram_samples.append(psutil.virtual_memory().used / (1024 ** 2))
 
-                # process-specific memory footprint - this is what the model actualy needs
-                # more precise than system RAM becuase it only counts our python process
+                # process-specific memory footprint -> this is what the model actually needs
+                # more precise than system RAM because it only counts our python process
                 self.process_ram_samples.append(get_process_memory())
 
                 # temperature reading that only works on linux (raspberry pi, jetson)
-                # on windows sensors_temperatures() raises NotImplementedError -> we catch it
+                # on windows sensors_temperatures() raises NotImplementedError -> catches it
                 try:
                     temps = psutil.sensors_temperatures()
                     if temps:
@@ -140,7 +140,7 @@ class HardwareMonitor:
 
                 # GPU utilization via sysfs, works on Jetson Nano only
                 # returns 0-1000, divide by 10 to get percentage
-                # on raspberry pi and windows this path doesnt exist -> silently skipped
+                # on raspberry pi and windows this path doesnt exist -> skipped
                 try:
                     gpu_load = int(Path("/sys/devices/gpu.0/load").read_text().strip())
                     self.gpu_samples.append(round(gpu_load / 10, 1))
@@ -198,7 +198,7 @@ def get_session(model_path, mode, device):
         return ort.InferenceSession(str(quantized_path), providers=["CPUExecutionProvider"])
 
     elif mode == "int8" and device == "cuda":
-        # TensorRT can do INT8 inference on NVIDIA GPUs - faster than FP32 on GPU
+        # TensorRT can do INT8 inference on NVIDIA GPUs -> probably faster than FP32 on GPU
         providers = [
             ("TensorrtExecutionProvider", {"trt_int8_enable": True}),
             "CUDAExecutionProvider"
@@ -217,7 +217,7 @@ def get_session(model_path, mode, device):
 
 
 # Single-Stream benchmark -> measures latency for one sample at a time
-# also captures hardware metrics (CPU, RAM, temp, power) DURING the inference run
+# also captures hardware metrics (CPU, RAM, temp, power) during inference run
 def measure_latency_p90(session):
     # creates random dummy image with the same shape as tiny-imagenet (3x64x64)
     # doesn't need real images here, only measuring speed not accuracy
@@ -228,7 +228,7 @@ def measure_latency_p90(session):
     for _ in range(WARMUP_RUNS):
         session.run(None, {input_name: dummy_input})
 
-    # starts hardware monitoring right before the actual measurment begins
+    # starts hardware monitoring right before the actual measurement begins
     monitor = HardwareMonitor()
     power_before = read_power_watts()
     monitor.start()
@@ -282,12 +282,12 @@ def measure_throughput(session):
 
 
 def main():
-    # command line arguments - model path is required, rest has defaults
+    # command line arguments model path is required, rest has defaults
     parser = argparse.ArgumentParser(description="ONNX benchmark for edge hardware")
     parser.add_argument("--model",         required=True, help="path to .onnx model file")
     parser.add_argument("--mode",          choices=["fp32", "int8"], default="fp32")
     parser.add_argument("--device",        choices=["cpu", "cuda"],  default="cpu")
-    # these two are optional if not given parses them from the filename automatically
+    # these two are optional parses them from the filename automatically if not there
     parser.add_argument("--pruning-ratio", type=float, default=None, help="override pruning ratio (auto-parsed from filename if omitted)")
     parser.add_argument("--workflow",      choices=["standalone", "hybrid"], default=None, help="override workflow (auto-parsed from filename if omitted)")
     args = parser.parse_args()
